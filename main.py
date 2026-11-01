@@ -26,7 +26,7 @@ async def upload_dataset(file: UploadFile = File(...)):
     """Read and store a CSV upload."""
     if Path(file.filename).suffix.lower() != ".csv":
         logger.warning(f"Unsupported file format: {Path(file.filename).suffix.lower()}")
-        raise HTTPException(status_code=404, detail="Non-CSV file Uploaded")
+        raise HTTPException(status_code=400, detail="Non-CSV file Uploaded")
     
     contents = await file.read()
 
@@ -45,24 +45,22 @@ async def upload_dataset(file: UploadFile = File(...)):
             columns=df.shape[1],
             column_names=list(df.columns),
     )
-    # storage.get_metadata(file_id)
+
 
 
 @app.get("/datasets/{dataset_id}")
 def get_dataset(dataset_id: int, limit: int = Query(default=100, ge=1)):
     """Return up to limit rows from a stored dataset."""
-    lst = []
     result = storage.get(dataset_id)
     if result is None:
         logger.warning(f"Dataset not found: {dataset_id}")
         raise HTTPException(status_code=404, detail="Not found")
+
     record = json.loads(result.head(limit).to_json(orient="records"))   
-    lst.append(record)
-    out = record[:limit]
     logger.info(f"Retrieved dataset: id={dataset_id}, returned rows={len(result)}")
     return {"id":dataset_id, 
             "data":record,
-            "rows":len(result)
+            "rows":len(record)
             }
 
 @app.post(
@@ -87,7 +85,7 @@ def process_dataset(dataset_id: int, config: ProcessConfig):
     request_model_dict = config.model_dump()
     process_df = process_data(validate_df, request_model_dict)
     cleaning_report = create_cleaning_report(validate_df, process_df)
-    storage.update(dataset_id, request_model_dict)
+    storage.update(dataset_id, process_df)
     logger.info(f"Processed dataset: id={dataset_id}, validation_removed={rows_removed}, rows_before={len(result)}, rows_after={len(process_df)}")
     return {"id": dataset_id, 
             "validation_rows_removed": rows_removed,

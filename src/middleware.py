@@ -14,8 +14,6 @@ async def log_requests(request: Request, call_next):
     try:
         response = await call_next(request)
     except Exception:
-        # TODO 1: Log the unexpected exception at ERROR with exc_info=True.
-        # Include the request ID. Do not expose exception details to the client.
         logger.error(f"Unexpected failure: request_id= {request_id}",exc_info=True)
         response = JSONResponse(
             status_code=500,
@@ -23,11 +21,7 @@ async def log_requests(request: Request, call_next):
         )
 
     duration_ms = (time.perf_counter() - started) * 1000
-    
-    # TODO 2: Build a message containing request_id, request.method,
-    # request.url.path, response.status_code, and duration_ms.
-    # TODO 3: Log that message at ERROR for 5xx, WARNING for 4xx,
-    # and INFO for other responses.
+
     message = (f"request_id={request_id} {request.method} {request.url.path} "
             f"status={response.status_code} duration={duration_ms:.1f}ms"
     )

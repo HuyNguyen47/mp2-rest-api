@@ -38,6 +38,7 @@ class DatasetStorage:
         if dataset_id not in self._store:
             return False
         self._store[dataset_id]["data"] = df.copy()
+        logger.debug(f"Updated dataset: id={dataset_id}, rows={len(self._store[dataset_id]["data"])}")
         return True
 
     def clear(self):
